@@ -83,15 +83,14 @@ npm run dist:linux        # construit l'AppImage Linux
 
 ### Publier une nouvelle version
 
-Changez `version` dans `package.json`, puis :
+Augmentez `version` dans `package.json` (par exemple `1.1.0`), puis faites un commit et un push sur `main` :
 
 ```sh
 git commit -am "Version 1.1.0"
-git tag v1.1.0
-git push && git push --tags
+git push
 ```
 
-GitHub Actions construit alors les versions Mac, Windows et Linux et les publie dans *Releases* (workflow `.github/workflows/release.yml`). La version web est republiée à chaque modification de `app/` (workflow `.github/workflows/pages.yml`).
+GitHub Actions construit alors les versions Mac, Windows et Linux, puis les publie dans *Releases* sous le nom `v1.1.0` (workflow `.github/workflows/release.yml`). On peut aussi le lancer à la main depuis l'onglet *Actions*. La version web est republiée à chaque modification de `app/` (workflow `.github/workflows/pages.yml`).
 
 ### Organisation du code
 

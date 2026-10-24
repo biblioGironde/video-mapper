@@ -1,10 +1,17 @@
-# Construit l'application pour macOS, Windows et Linux et publie les fichiers
-# dans une « Release » GitHub. Se déclenche quand on pousse un tag v1.2.3,
-# ou à la main depuis l'onglet Actions (« Run workflow »).
+# Construit l'application pour macOS, Windows et Linux et la publie dans une
+# « Release » GitHub nommée d'après la version de package.json (ex. v1.0.0).
+#
+# Se déclenche :
+#  - quand package.json change sur main (il suffit d'augmenter « version ») ;
+#  - quand on pousse un tag v1.2.3 ;
+#  - à la main depuis l'onglet Actions (« Run workflow »).
+# Si la version existe déjà en Release, rien n'est reconstruit.
 name: Release
 
 on:
   push:
+    branches: [main]
+    paths: ["package.json", ".github/workflows/release.yml"]
     tags: ["v*"]
   workflow_dispatch:
 
@@ -12,7 +19,29 @@ permissions:
   contents: write
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      exists: ${{ steps.v.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "La release $TAG existe déjà : rien à faire."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: version
+    if: needs.version.outputs.exists == 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -44,8 +73,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [version, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -54,6 +82,9 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: Video Mapper ${{ needs.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           files: artifacts/*
           generate_release_notes: true
           body: |
@@ -67,3 +98,5 @@ jobs:
             - macOS : après l'avoir glissée dans Applications, lancer une fois dans le Terminal
               `xattr -cr "/Applications/Video Mapper.app"`
             - Windows : « Informations complémentaires » puis « Exécuter quand même ».
+
+            Version web : https://bibliogironde.github.io/video-mapper/
