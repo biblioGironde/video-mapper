@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video Mapper — Sortie</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body class="output cursor">
+  <div id="stage" class="out-stage"></div>
+  <div id="badge" class="out-badge" hidden></div>
+
+  <div id="overlay" class="overlay">
+    <div class="card">
+      <h1>Écran de projection</h1>
+      <p>Placez cette fenêtre sur le vidéoprojecteur puis passez en plein écran.<br>
+        Le clic active aussi le son des vidéos.<br>
+        <small>Double-clic : plein écran on/off · Échap : quitter le plein écran</small></p>
+      <div class="btns" id="fsBtns">
+        <button class="primary" id="btnFs">Plein écran</button>
+        <button id="btnWindow">Rester en fenêtre</button>
+      </div>
+    </div>
+  </div>
+
+<script src="lib/p5.min.js"></script>
+<script src="lib/p5.mapper.min.js"></script>
+<script src="js/store.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/output.js"></script>
+</body>
+</html>

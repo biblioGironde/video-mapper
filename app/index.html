@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video Mapper — Édition</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body class="editor">
+
+<header class="topbar">
+  <div class="brand"><span class="logo">◩</span> Video Mapper <small>édition</small></div>
+
+  <button id="btnOpenOutput" class="primary" title="Ouvre l'écran de projection dans un nouvel onglet / fenêtre">Ouvrir la sortie ↗</button>
+  <select id="selDisplay" hidden title="Écran de sortie (vidéoprojecteur)"></select>
+  <button id="btnOutFs" hidden title="Sortie en plein écran on / off">⛶</button>
+  <span id="outStatus" class="status off" title="État de l'écran de sortie">sortie fermée</span>
+
+  <div class="sep"></div>
+
+  <label class="field" title="Résolution de projection (taille de la scène)">
+    Scène
+    <select id="selStage">
+      <option value="1920x1080">1920 × 1080</option>
+      <option value="1280x720">1280 × 720</option>
+      <option value="1024x768">1024 × 768</option>
+      <option value="1280x800">1280 × 800</option>
+      <option value="1920x1200">1920 × 1200</option>
+      <option value="3840x2160">3840 × 2160</option>
+      <option value="custom">Personnalisée…</option>
+    </select>
+  </label>
+
+  <div class="seg" id="segCalib" title="Ce que la souris peut modifier sur la scène">
+    <button data-v="off" title="Aucune poignée : on regarde le rendu, rien ne bouge au clic">Lecture</button>
+    <button data-v="ALL" title="Glisser un coin le déplace ; glisser l'intérieur d'une forme la déplace en entier">Coins + déplacer</button>
+    <button data-v="POINTS" title="Seuls les coins / sommets bougent : impossible de déplacer une forme par erreur">Coins seuls</button>
+    <button data-v="SURFACES" title="Les formes se déplacent en bloc ; leurs coins sont verrouillés">Déplacer seul</button>
+    <button data-v="MEDIA" title="Déplacer, zoomer, tourner la vidéo / l'image à l'intérieur de sa forme">Cadrer le média</button>
+  </div>
+
+  <label class="check" title="Affiche les contours et points sur le vidéoprojecteur, pratique pour caler"><input type="checkbox" id="chkGuides"> repères sur la sortie</label>
+  <label class="field" title="Mire projetée par-dessus tout (photo de repérage, mise au point)">
+    Mire
+    <select id="selPattern">
+      <option value="">aucune</option>
+      <option value="white">blanche</option>
+      <option value="grid">grille</option>
+    </select>
+  </label>
+  <span id="backdropCtl" class="field" hidden title="Photo de repérage redressée, visible seulement dans l'éditeur">
+    <label class="check"><input type="checkbox" id="chkBackdrop"> photo de fond</label>
+    <input type="range" id="rngBackdrop" min="0.05" max="1" step="0.05" style="width:70px">
+    <button class="icon" id="btnBackdropDel" title="Retirer la photo de fond">✕</button>
+  </span>
+
+  <div class="sep"></div>
+  <button id="btnBlackout" class="danger-toggle" title="Noir général">Noir</button>
+  <button id="btnAllPlay" title="Tout lire / tout mettre en pause">⏯ Tout</button>
+  <button id="btnAllRestart" title="Tout revenir au début">⏮ Tout</button>
+
+  <div class="grow"></div>
+  <button id="btnExport" title="Télécharger le projet (.json, sans les vidéos)">Exporter</button>
+  <label class="btn" title="Charger un projet .json">Importer<input type="file" id="fileImport" accept=".json,application/json" hidden></label>
+</header>
+
+<main class="layout">
+  <section class="stage-wrap" id="stageWrap">
+    <div id="stage" class="stage"></div>
+    <div class="drop-hint" id="dropHint">Déposer : nouveau calque</div>
+    <div class="stage-help" id="stageHelp">
+      Glissez les <b>coins</b> pour déformer, l'<b>intérieur</b> pour déplacer. Cliquez une surface pour sélectionner son calque.
+    </div>
+  </section>
+
+  <aside class="side">
+    <section class="panel">
+      <div class="panel-h">
+        <h2>Calques</h2>
+        <div class="tools">
+          <label class="btn small" title="Importer des vidéos / images (chacune crée un calque)">+ Médias<input type="file" id="fileMedia" accept="video/*,image/*,.webm,.mov,.mp4" multiple hidden></label>
+          <button class="small" id="btnAddLayer" title="Calque vide (à associer ensuite à un média)">+ Calque vide</button>
+          <button class="small" id="btnPhoto" title="Repérer les surfaces sur une photo du lieu et créer les calques">📷 Photo</button>
+        </div>
+      </div>
+      <p class="hint">Un calque = une forme + un média. Glissez un fichier ou un média de la médiathèque sur une forme (scène ou liste) pour l'y placer. Le calque du haut est dessiné au-dessus ; l'alpha des WebM VP9 / HEVC et des PNG est respecté.</p>
+      <ul id="layerList" class="layer-list"></ul>
+    </section>
+
+    <section class="panel" id="propsPanel">
+      <div class="panel-h"><h2>Propriétés</h2></div>
+      <div id="props"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h">
+        <h2>Clavier</h2>
+        <div class="tools"><button class="small" id="btnAddBinding">+ Raccourci</button></div>
+      </div>
+      <p class="hint">Les touches fonctionnent dans les deux onglets. Plusieurs lignes avec la même touche = une « cue » qui déclenche plusieurs actions.</p>
+      <div id="bindings"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><h2>Médiathèque</h2></div>
+      <p class="hint">Stockée dans le navigateur (IndexedDB), réutilisable dans plusieurs calques.</p>
+      <ul id="mediaList" class="media-list"></ul>
+    </section>
+  </aside>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="lib/p5.min.js"></script>
+<script src="lib/p5.mapper.min.js"></script>
+<script src="js/store.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/photo.js"></script>
+<script src="js/editor.js"></script>
+</body>
+</html>

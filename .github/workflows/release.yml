@@ -1,0 +1,69 @@
+# Construit l'application pour macOS, Windows et Linux et publie les fichiers
+# dans une « Release » GitHub. Se déclenche quand on pousse un tag v1.2.3,
+# ou à la main depuis l'onglet Actions (« Run workflow »).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            cmd: npx electron-builder --mac
+          - os: windows-latest
+            cmd: npx electron-builder --win --x64
+          - os: ubuntu-latest
+            cmd: npx electron-builder --linux AppImage
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Construire
+        run: ${{ matrix.cmd }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: video-mapper-${{ matrix.os }}
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.exe
+            dist/*.AppImage
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          body: |
+            ## Téléchargement
+            - **Mac Apple Silicon (M1–M4)** : `VideoMapper-…-macOS-arm64.dmg`
+            - **Mac Intel** : `VideoMapper-…-macOS-x64.dmg`
+            - **Windows** : `VideoMapper-Installer-….exe` (installeur) ou `VideoMapper-…-Windows-x64.zip` (portable)
+            - **Linux** : `VideoMapper-…-Linux-x86_64.AppImage`
+
+            L'application n'est pas signée par un certificat éditeur :
+            - macOS : après l'avoir glissée dans Applications, lancer une fois dans le Terminal
+              `xattr -cr "/Applications/Video Mapper.app"`
+            - Windows : « Informations complémentaires » puis « Exécuter quand même ».
