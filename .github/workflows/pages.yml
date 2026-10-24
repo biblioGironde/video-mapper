@@ -1,4 +1,5 @@
 # Publie la version web (dossier app/) sur GitHub Pages à chaque mise à jour de main.
+# Prérequis (une fois) : Settings → Pages → Source : « GitHub Actions ».
 name: Version web (GitHub Pages)
 
 on:
